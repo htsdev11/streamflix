@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-o*wiw#!rd)=qs5y2^h2pn1y#fcp1^v0*b9-mnvk5vd-3!s531r'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', "www.streamflix.ddd-remote.com", "streamflix.ddd-remote.com"]
 
 
 # Application definition
@@ -87,7 +87,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'streamflix_db',
         'USER': 'streamflix_user',
-        'PASSWORD': 'stream@123',
+        'PASSWORD': 'stream@7259',
         'HOST': 'localhost',
         'PORT': '5432',
     }

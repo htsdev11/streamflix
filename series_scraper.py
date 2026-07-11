@@ -1,7 +1,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'moviebox.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'streamflix.settings')
 django.setup()
 
 import requests
