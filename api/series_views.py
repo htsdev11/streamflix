@@ -14,6 +14,7 @@ from .serializers import (
 )
 from .pagination import CustomPagination
 from .services import process_series_item, get_year_filter
+from .utils import generate_cache_key, get_cached_response, set_cached_response
 
 
 # ==========================================
@@ -53,6 +54,11 @@ class SeriesSearchView(APIView):
         if not search_letter:
             return APIResponse.error("Search parameter is required")
 
+        cache_key = generate_cache_key("series:search", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         queryset = TV_Series.objects.filter(
             title__istartswith=search_letter
         ).order_by("-releaseDate")
@@ -62,7 +68,9 @@ class SeriesSearchView(APIView):
 
         serializer = TVSeriesDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -73,6 +81,11 @@ class AllTVSeriesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:all", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         queryset = TV_Series.objects.exclude(
             Q(title__isnull=True) |
             Q(title="") |
@@ -84,7 +97,9 @@ class AllTVSeriesView(APIView):
 
         serializer = TVSeriesSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -95,6 +110,11 @@ class FilterByTitleView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:title", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         title = request.query_params.get("title", "")
 
         queryset = TV_Series.objects.filter(is_active=True)
@@ -109,7 +129,9 @@ class FilterByTitleView(APIView):
 
         serializer = TVSeriesDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -120,6 +142,11 @@ class FilterByGenreView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:genre", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         genre = request.query_params.get("genre", "")
 
         queryset = TV_Series.objects.filter(is_active=True)
@@ -134,7 +161,9 @@ class FilterByGenreView(APIView):
 
         serializer = TVSeriesDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -145,6 +174,11 @@ class FilterByCountry(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:country", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         country = request.query_params.get("country", "")
 
         queryset = TV_Series.objects.filter(is_active=True)
@@ -159,7 +193,9 @@ class FilterByCountry(APIView):
 
         serializer = TVSeriesDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -175,6 +211,11 @@ class FilterByIdView(APIView):
         if not series_id:
             return APIResponse.error("id is required")
 
+        cache_key = generate_cache_key("series:id", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         try:
             series = TV_Series.objects.get(id=series_id, is_active=True)
         except TV_Series.DoesNotExist:
@@ -185,7 +226,9 @@ class FilterByIdView(APIView):
 
         serializer = TVSeriesDetailSerializer(series)
 
-        return APIResponse.success(data=serializer.data)
+        response = APIResponse.success(data=serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -196,6 +239,11 @@ class SeriesSortingFilters(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:filter", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         genre = request.query_params.get("genre")
         country = request.query_params.get("country")
         year = request.query_params.get("year")
@@ -218,7 +266,9 @@ class SeriesSortingFilters(APIView):
 
         serializer = TVSeriesSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -229,6 +279,11 @@ class SeriesIMDbSortAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:sort", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         sort_type = request.query_params.get("type", "imdb")
 
         queryset = TV_Series.objects.exclude(
@@ -265,15 +320,24 @@ class SeriesIMDbSortAPIView(APIView):
 
         serializer = TVSeriesSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
 # SERIES CATEGORY
 # ==========================================
 class SeriesCategoryView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:category", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         size = int(request.query_params.get("size", 3))
 
         data = {}
@@ -288,7 +352,9 @@ class SeriesCategoryView(APIView):
                 serializer = TVSeriesSerializer(series, many=True)
                 data[genre.name] = serializer.data
 
-        return APIResponse.success(data=data)
+        response = APIResponse.success(data=data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -306,6 +372,8 @@ class SeriesScrapeView(APIView):
             )
 
             serializer = TVSeriesDetailSerializer(result["series"], many=True)
+
+            cache.clear()
 
             return APIResponse.success(
                 data={
@@ -328,8 +396,15 @@ class SeriesScrapeView(APIView):
 # SERIES BY YEAR
 # ==========================================
 class SeriesByYearAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("series:by_year", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         year = request.GET.get("year", "All")
         filters = get_year_filter(year)
 
@@ -340,13 +415,17 @@ class SeriesByYearAPIView(APIView):
 
         serializer = TVSeriesSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
 # SEARCH LOG
 # ==========================================
 class SeriesSearchLogAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         name = request.data.get("name")

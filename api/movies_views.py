@@ -19,6 +19,7 @@ from .serializers import (
 )
 from .pagination import CustomPagination
 from .services import process_movie_item, get_year_filter
+from .utils import generate_cache_key, get_cached_response, set_cached_response
 
 
 # ==========================================
@@ -58,6 +59,11 @@ class MovieSearchView(APIView):
         if not search_letter:
             return APIResponse.error("Search parameter is required")
 
+        cache_key = generate_cache_key("movies:search", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         queryset = Movie.objects.filter(
             title__istartswith=search_letter
         ).order_by("-releaseDate")
@@ -67,7 +73,9 @@ class MovieSearchView(APIView):
 
         serializer = MovieDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -78,6 +86,12 @@ class AllMoviesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:all", request)
+        cached_res = get_cached_response(cache_key)
+        print("C.....................", cached_res)
+        if cached_res:
+            return cached_res
+
         queryset = Movie.objects.exclude(
             Q(title__isnull=True) |
             Q(title="") |
@@ -89,7 +103,9 @@ class AllMoviesView(APIView):
 
         serializer = MovieSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -100,6 +116,11 @@ class MovieByTitleView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:title", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         title = request.query_params.get("title", "")
 
         queryset = Movie.objects.filter(is_active=True)
@@ -114,7 +135,9 @@ class MovieByTitleView(APIView):
 
         serializer = MovieDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -125,6 +148,11 @@ class MovieByGenreView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:genre", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         genre = request.query_params.get("genre", "")
 
         queryset = Movie.objects.filter(is_active=True)
@@ -139,7 +167,9 @@ class MovieByGenreView(APIView):
 
         serializer = MovieDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -150,6 +180,11 @@ class MovieByCountry(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:country", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         country = request.query_params.get("country", "")
 
         queryset = Movie.objects.filter(is_active=True)
@@ -164,7 +199,9 @@ class MovieByCountry(APIView):
 
         serializer = MovieDetailSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -180,6 +217,11 @@ class MovieByIdView(APIView):
         if not movie_id:
             return APIResponse.error("id is required")
 
+        cache_key = generate_cache_key("movies:id", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         try:
             movie = Movie.objects.get(id=movie_id, is_active=True)
         except Movie.DoesNotExist:
@@ -190,7 +232,9 @@ class MovieByIdView(APIView):
 
         serializer = MovieDetailSerializer(movie)
 
-        return APIResponse.success(data=serializer.data)
+        response = APIResponse.success(data=serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -201,6 +245,11 @@ class MovieSortingFilters(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:filter", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         genre = request.query_params.get("genre")
         country = request.query_params.get("country")
         year = request.query_params.get("year")
@@ -223,7 +272,9 @@ class MovieSortingFilters(APIView):
 
         serializer = MovieSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -234,6 +285,11 @@ class MovieIMDbSortAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:sort", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         sort_type = request.query_params.get("type", "imdb")
 
         queryset = Movie.objects.exclude(
@@ -270,15 +326,24 @@ class MovieIMDbSortAPIView(APIView):
 
         serializer = MovieSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
 # MOVIE CATEGORY
 # ==========================================
 class MoviesCategoryView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:category", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         size = int(request.query_params.get("size", 3))
 
         data = []
@@ -297,7 +362,9 @@ class MoviesCategoryView(APIView):
                     "data": serializer.data
                 })
 
-        return APIResponse.success(data=data)
+        response = APIResponse.success(data=data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -310,6 +377,8 @@ class MovieScrapeView(APIView):
             result = process_movie_item("movies", sort="ForYou", page=1, perPage=50)
 
             serializer = MovieDetailSerializer(result["movies"], many=True)
+
+            cache.clear()
 
             return APIResponse.success(data={
                 "created": result["created"],
@@ -329,8 +398,15 @@ class MovieScrapeView(APIView):
 # MOVIE BY YEAR
 # ==========================================
 class MovieByYearAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("movies:by_year", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         year = request.GET.get("year", "All")
         filters = get_year_filter(year)
 
@@ -341,7 +417,9 @@ class MovieByYearAPIView(APIView):
 
         serializer = MovieSerializer(page, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -403,12 +481,19 @@ class MovieYearListAPIView(APIView):
 
 
 class SearchSuggestionView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         search_query = request.query_params.get("search", "").strip()
 
         if not search_query:
             return APIResponse.error("Search parameter is required")
+
+        cache_key = generate_cache_key("movies:suggestions", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
 
         series_queryset = TV_Series.objects.filter(
             title__icontains=search_query
@@ -434,12 +519,16 @@ class SearchSuggestionView(APIView):
                 "subjectType": movie.subjectType
             })
 
-        return APIResponse.success(data=suggestions)
+        response = APIResponse.success(data=suggestions)
+        set_cached_response(cache_key, response.data)
+        return response
 
 # ==========================================
 # SEARCH LOG
 # ==========================================
 class MovieSearchLogAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         name = request.data.get("name")

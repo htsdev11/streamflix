@@ -21,6 +21,7 @@ from .serializers import (
 )
 from .services import scrape_everyone_search, foryou_scrape
 from .pagination import CustomPagination
+from .utils import generate_cache_key, get_cached_response, set_cached_response
 
 
 # ==========================================
@@ -86,6 +87,11 @@ class ForyouAll(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("foryou:all", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         size = request.query_params.get("size", 3)
         subject_type = request.query_params.get("type")
 
@@ -129,7 +135,9 @@ class ForyouAll(APIView):
 
         filtered = [i for i in serializer.data if i.get("data")]
 
-        return APIResponse.success(data=filtered)
+        response = APIResponse.success(data=filtered)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -146,6 +154,11 @@ class ForyouById(APIView):
         if not obj_id:
             return APIResponse.error(message="id is required")
 
+        cache_key = generate_cache_key("foryou:id", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         obj = Foryou.objects.filter(id=obj_id, is_active=True).first()
 
         if not obj:
@@ -161,7 +174,9 @@ class ForyouById(APIView):
         else:
             serializer = ForyouSerializer(obj, context={"paginate": False})
 
-        return APIResponse.success(data=serializer.data)
+        response = APIResponse.success(data=serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -172,6 +187,11 @@ class ForyouMoviesAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("foryou:movies", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         limit = int(request.query_params.get("limit", 3))
 
         queryset = (
@@ -187,7 +207,9 @@ class ForyouMoviesAPIView(APIView):
             context={"paginate": True, "value_of_splice": limit}
         )
 
-        return APIResponse.success(data=serializer.data)
+        response = APIResponse.success(data=serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -198,6 +220,11 @@ class ForyouSeriesAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("foryou:series", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         limit = int(request.query_params.get("limit", 5))
 
         queryset = (
@@ -216,7 +243,9 @@ class ForyouSeriesAPIView(APIView):
             context={"paginate": True, "value_of_splice": limit}
         )
 
-        return paginator.get_paginated_response(serializer.data)
+        response = paginator.get_paginated_response(serializer.data)
+        set_cached_response(cache_key, response.data)
+        return response
 
 
 # ==========================================
@@ -230,6 +259,8 @@ class ForyouScrapeView(APIView):
 
             queryset = Foryou.objects.all().distinct()
             serializer = ForyouSerializer(queryset, many=True)
+
+            cache.clear()
 
             return APIResponse.success(
                 data=serializer.data,
@@ -328,8 +359,15 @@ class TrendingPageAPIView(APIView):
 # FORYOU COMBINED
 # ==========================================
 class ForyouCombinedAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        cache_key = generate_cache_key("foryou:combined", request)
+        cached_res = get_cached_response(cache_key)
+        if cached_res:
+            return cached_res
+
         movies = []
         series = []
 
@@ -364,7 +402,9 @@ class ForyouCombinedAPIView(APIView):
         random.shuffle(movies)
         random.shuffle(series)
 
-        return APIResponse.success(data={
+        response = APIResponse.success(data={
             "movies": movies[:movies_limit],
             "series": series[:series_limit]
         })
+        set_cached_response(cache_key, response.data)
+        return response
