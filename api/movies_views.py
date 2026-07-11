@@ -88,7 +88,7 @@ class AllMoviesView(APIView):
     def get(self, request):
         cache_key = generate_cache_key("movies:all", request)
         cached_res = get_cached_response(cache_key)
-        print("C.....................", cached_res)
+        # print("C.....................", cached_res)
         if cached_res:
             return cached_res
 
